@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 1px solid #fff;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            color: #fff;
+            font-size: 24px;
+        }
+        #message {
+            position: absolute;
+            top: 50%;
+            color: #fff;
+            font-size: 36px;
+            display: none;
+            text-align: center;
+        }
+        #play-again {
+            position: absolute;
+            top: 60%;
+            color: #fff;
+            font-size: 24px;
+            display: none;
+            cursor: pointer;
+            padding: 10px 20px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #play-again:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="score">Player 1: 0 - Player 2: 0</div>
+    <div id="message"></div>
+    <div id="play-again" onclick="startGame()">Play Again</div>
+    <canvas id="pong" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById('pong');
+        const context = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const messageElement = document.getElementById('message');
+        const playAgainButton = document.getElementById('play-again');
+
+        let player1Score = 0;
+        let player2Score = 0;
+
+        // Create the paddles
+        const paddleWidth = 10, paddleHeight = 100;
+        const player1 = {
+            x: 0,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#fff',
+            dy: 5
+        };
+        const player2 = {
+            x: canvas.width - paddleWidth,
+            y: canvas.height / 2 - paddleHeight / 2,
+            width: paddleWidth,
+            height: paddleHeight,
+            color: '#fff',
+            dy: 5
+        };
+
+        // Create the ball
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 10,
+            speed: 4, // Decreased speed
+            dx: 4, // Decreased speed
+            dy: 4, // Decreased speed
+            color: '#fff'
+        };
+
+        // Draw the paddle
+        function drawPaddle(x, y, width, height, color) {
+            context.fillStyle = color;
+            context.fillRect(x, y, width, height);
+        }
+
+        // Draw the ball
+        function drawBall(x, y, radius, color) {
+            context.fillStyle = color;
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2, false);
+            context.closePath();
+            context.fill();
+        }
+
+        // Move the paddles
+        function movePaddle(paddle, upKey, downKey) {
+            document.addEventListener('keydown', event => {
+                switch(event.keyCode) {
+                    case upKey:
+                        paddle.y -= paddle.dy;
+                        break;
+                    case downKey:
+                        paddle.y += paddle.dy;
+                        break;
+                }
+            });
+        }
+
+        // Update the game
+        function update() {
+            // Move the ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with top and bottom walls
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.dy *= -1;
+            }
+
+            // Ball collision with paddles
+            if (ball.x - ball.radius < player1.x + player1.width && ball.y > player1.y && ball.y < player1.y + player1.height) {
+                ball.dx *= -1;
+            }
+            if (ball.x + ball.radius > player2.x && ball.y > player2.y && ball.y < player2.y + player2.height) {
+                ball.dx *= -1;
+            }
+
+            // Ball out of bounds
+            if (ball.x + ball.radius < 0) {
+                player2Score++;
+                resetBall();
+            } else if (ball.x - ball.radius > canvas.width) {
+                player1Score++;
+                resetBall();
+            }
+
+            // Check for win condition
+            if (player1Score >= 5) {
+                messageElement.textContent = "Player 1 Wins!";
+                messageElement.style.display = "block";
+                playAgainButton.style.display = "block";
+                return;
+            } else if (player2Score >= 5) {
+                messageElement.textContent = "Player 2 Wins!";
+                messageElement.style.display = "block";
+                playAgainButton.style.display = "block";
+                return;
+            }
+
+            // Update the score
+            scoreElement.textContent = `Player 1: ${player1Score} - Player 2: ${player2Score}`;
+        }
+
+        // Reset the ball
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx *= -1;
+        }
+
+        // Render the game
+        function render() {
+            // Clear the canvas
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the paddles
+            drawPaddle(player1.x, player1.y, player1.width, player1.height, player1.color);
+            drawPaddle(player2.x, player2.y, player2.width, player2.height, player2.color);
+
+            // Draw the ball
+            drawBall(ball.x, ball.y, ball.radius, ball.color);
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        function startGame() {
+            player1Score = 0;
+            player2Score = 0;
+            messageElement.style.display = "none";
+            playAgainButton.style.display = "none";
+            gameLoop();
+        }
+
+        movePaddle(player1, 38, 40); // Up and Down keys for player 1
+        movePaddle(player2, 87, 83); // W and S keys for player 2
+        startGame();
+    </script>
+</body>
+</html>
